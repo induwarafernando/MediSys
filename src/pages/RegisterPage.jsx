@@ -21,7 +21,7 @@ function RegisterPage() {
   };
 
   return (
-    <div className="h-screen relative ml-24overflow-hidden">
+    <div className="h-screen relative overflow-hidden">
       {/* Background Image with Overlay */}
       <div
         className="absolute inset-0 bg-cover bg-center"
