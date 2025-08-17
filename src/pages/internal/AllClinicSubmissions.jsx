@@ -128,7 +128,7 @@ export default function AllClinicSubmissions() {
   );
 
   const goToDetails = (id) => navigate(`/dashboard/reports/${id}`);
-
+  
   return (
     <div className="max-w-7xl mx-auto">
       <h2 className="text-2xl font-bold mb-4">All Clinic Submissions</h2>

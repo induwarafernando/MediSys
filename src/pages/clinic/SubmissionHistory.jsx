@@ -8,6 +8,7 @@ import {
   CheckCircle,
   Clock,
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom'; // <-- add this
 
 const PAGE_SIZE = 8;
 
@@ -47,6 +48,9 @@ export default function SubmissionHistory() {
   const [page, setPage] = useState(1);
   const [sortKey, setSortKey] = useState('uploadDate'); // 'name' | 'clinic' | 'status' | 'uploadDate' | 'recordCount'
   const [sortDir, setSortDir] = useState('desc'); // 'asc' | 'desc'
+
+  const navigate = useNavigate();                         // <-- init navigate
+  const goToDetails = (id) => navigate(`/dashboard/reports/${id}`); // <-- function
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -173,10 +177,19 @@ export default function SubmissionHistory() {
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex gap-2">
-                      <button className="p-1 hover:bg-gray-100 rounded" title="View Details">
+                      <button
+                        type="button"
+                        className="p-1 hover:bg-gray-100 rounded"
+                        title="View Details"
+                        onClick={() => goToDetails(r.id)}   // <-- navigate to details
+                      >
                         <Eye className="h-4 w-4 text-gray-500" />
                       </button>
-                      <button className="p-1 hover:bg-gray-100 rounded" title="Download">
+                      <button
+                        type="button"
+                        className="p-1 hover:bg-gray-100 rounded"
+                        title="Download"
+                      >
                         <Download className="h-4 w-4 text-gray-500" />
                       </button>
                     </div>
