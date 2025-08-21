@@ -1,16 +1,16 @@
-import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import LoginPage from './auth/LoginPage';
-import DashboardPage from './pages/dashboard/DashboardPage'; // layout
-import DashboardHome from './pages/dashboard/DashboardHome'; // index (home)
-import UploadPage from './pages/clinic/UploadPage';
-import HistoryPage from './pages/clinic/SubmissionHistory';
-import NotificationsPage from './pages/internal/NotificationLogs';
-import AllClinicSubmissions from './pages/internal/AllClinicSubmissions'; // staff view
-import ReportDetails from './pages/internal/ReportDetails'; // staff view
+import React from "react";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import CognitoRedirect from "./auth/CognitoRedirect";
+import DashboardPage from "./pages/dashboard/DashboardPage";
+import DashboardHome from "./pages/dashboard/DashboardHome";
+import UploadPage from "./pages/clinic/UploadPage";
+import HistoryPage from "./pages/clinic/SubmissionHistory";
+import NotificationsPage from "./pages/internal/NotificationLogs";
+import AllClinicSubmissions from "./pages/internal/AllClinicSubmissions";
+import ReportDetails from "./pages/internal/ReportDetails";
 
 function ProtectedRoute({ children }) {
-  const token = localStorage.getItem('idToken');
+  const token = localStorage.getItem("idToken");
   return token ? children : <Navigate to="/login" replace />;
 }
 
@@ -18,7 +18,8 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/login" element={<LoginPage />} />
+        {/* Cognito hosted login redirect */}
+        <Route path="/login" element={<CognitoRedirect />} />
 
         <Route
           path="/dashboard"
@@ -33,15 +34,10 @@ export default function App() {
           <Route path="history" element={<HistoryPage />} />
           <Route path="notifications" element={<NotificationsPage />} />
           <Route path="reports" element={<AllClinicSubmissions />} />
-          {/* make child path RELATIVE to /dashboard */}
           <Route path="reports/:id" element={<ReportDetails />} />
-
-          {/* Optional staff routes:
-          <Route path="analytics" element={<AnalyticsPage />} />
-          */}
         </Route>
 
-        {/* Redirect unknowns */}
+        {/* Default fallback */}
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>
