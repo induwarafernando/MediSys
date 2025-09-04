@@ -257,6 +257,7 @@ export default function AllClinicSubmissions() {
             <option>In Review</option>
             <option>Approved</option>
             <option>Rejected</option>
+            <option>Completed</option>
           </select>
         </div>
 
@@ -327,13 +328,13 @@ export default function AllClinicSubmissions() {
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex gap-2">
-                      <button
+                      {/* <button
                         className="p-1 hover:bg-gray-100 rounded"
                         title="View Details"
                         onClick={() => goToDetails(r.id)}
                       >
                         <Eye className="h-4 w-4 text-gray-600" />
-                      </button>
+                      </button> */}
                       <button
                         className="p-1 hover:bg-gray-100 rounded"
                         title="Download"

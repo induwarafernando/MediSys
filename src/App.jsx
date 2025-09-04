@@ -9,6 +9,7 @@ import NotificationsPage from "./pages/internal/NotificationLogs";
 import AllClinicSubmissions from "./pages/internal/AllClinicSubmissions";
 import ReportDetails from "./pages/internal/ReportDetails";
 import InternalDashboard from "./pages/dashboard/InternalDashboard";
+import CompliancePage from "./pages/internal/CompliancePage";
 
 function ProtectedRoute({ children }) {
   const token = localStorage.getItem("idToken");
@@ -26,7 +27,7 @@ export default function App() {
 <Route path="/internal" element={<InternalDashboard />}>
   <Route index element={<DashboardHome />} />
   <Route path="reports" element={<AllClinicSubmissions />} />
-  <Route path="compliance" element={<ReportDetails />} />
+  <Route path="compliance" element={<CompliancePage />} />
   <Route path="notifications" element={<NotificationsPage />} />
 </Route>
 
