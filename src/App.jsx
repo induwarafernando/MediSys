@@ -8,6 +8,7 @@ import HistoryPage from "./pages/clinic/SubmissionHistory";
 import NotificationsPage from "./pages/internal/NotificationLogs";
 import AllClinicSubmissions from "./pages/internal/AllClinicSubmissions";
 import ReportDetails from "./pages/internal/ReportDetails";
+import InternalDashboard from "./pages/dashboard/InternalDashboard";
 
 function ProtectedRoute({ children }) {
   const token = localStorage.getItem("idToken");
@@ -20,6 +21,15 @@ export default function App() {
       <Routes>
         {/* Cognito hosted login redirect */}
         <Route path="/login" element={<CognitoRedirect />} />
+
+
+<Route path="/internal" element={<InternalDashboard />}>
+  <Route index element={<DashboardHome />} />
+  <Route path="reports" element={<AllClinicSubmissions />} />
+  <Route path="compliance" element={<ReportDetails />} />
+  <Route path="notifications" element={<NotificationsPage />} />
+</Route>
+
 
         <Route
           path="/dashboard"
