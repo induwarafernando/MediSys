@@ -3,12 +3,18 @@ import { FileText, Search, Eye, Download } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const PAGE_SIZE = 8;
+const USE_DUMMY_DATA = false; // 🔀 toggle here (true = mock data, false = API)
+const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:5000";
 
 /** Helpers */
 function formatDate(d) {
   try {
     const dt = typeof d === "string" ? new Date(d) : d;
-    return dt.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+    return dt.toLocaleDateString(undefined, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
   } catch {
     return String(d);
   }
@@ -16,37 +22,88 @@ function formatDate(d) {
 
 function getStatusIcon(status) {
   const cls = "h-4 w-4";
-  if (status === "Approved") return <svg className={`${cls} text-green-500`} viewBox="0 0 24 24"><path fill="currentColor" d="M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>;
-  if (status === "In Review") return <svg className={`${cls} text-blue-500`} viewBox="0 0 24 24"><path fill="currentColor" d="M12 8v5l4 2 .75-1.23-3.25-1.77V8z"/><path fill="currentColor" d="M12 22a10 10 0 1 1 10-10 10.011 10.011 0 0 1-10 10zm0-18a8 8 0 1 0 8 8 8.009 8.009 0 0 0-8-8z"/></svg>;
-  if (status === "Rejected") return <svg className={`${cls} text-red-500`} viewBox="0 0 24 24"><path fill="currentColor" d="M12 2 1 21h22L12 2zm1 15h-2v-2h2zm0-4h-2V9h2z"/></svg>;
-  return <svg className={`${cls} text-gray-500`} viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="currentColor"/></svg>;
+  if (status === "Approved")
+    return (
+      <svg className={`${cls} text-green-500`} viewBox="0 0 24 24">
+        <path
+          fill="currentColor"
+          d="M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"
+        />
+      </svg>
+    );
+  if (status === "In Review")
+    return (
+      <svg className={`${cls} text-blue-500`} viewBox="0 0 24 24">
+        <path
+          fill="currentColor"
+          d="M12 8v5l4 2 .75-1.23-3.25-1.77V8z"
+        />
+        <path
+          fill="currentColor"
+          d="M12 22a10 10 0 1 1 10-10 10.011 10.011 0 0 1-10 10zm0-18a8 8 0 1 0 8 8 8.009 8.009 0 0 0-8-8z"
+        />
+      </svg>
+    );
+  if (status === "Rejected")
+    return (
+      <svg className={`${cls} text-red-500`} viewBox="0 0 24 24">
+        <path
+          fill="currentColor"
+          d="M12 2 1 21h22L12 2zm1 15h-2v-2h2zm0-4h-2V9h2z"
+        />
+      </svg>
+    );
+  return (
+    <svg className={`${cls} text-gray-500`} viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="10" fill="currentColor" />
+    </svg>
+  );
 }
 function getStatusPill(status) {
-  const base = "px-2.5 py-1 rounded-full text-xs font-medium border inline-flex items-center gap-1";
-  if (status === "Approved") return `${base} bg-green-50 text-green-700 border-green-200`;
-  if (status === "In Review") return `${base} bg-blue-50 text-blue-700 border-blue-200`;
-  if (status === "Rejected") return `${base} bg-red-50 text-red-700 border-red-200`;
+  const base =
+    "px-2.5 py-1 rounded-full text-xs font-medium border inline-flex items-center gap-1";
+  if (status === "Approved")
+    return `${base} bg-green-50 text-green-700 border-green-200`;
+  if (status === "In Review")
+    return `${base} bg-blue-50 text-blue-700 border-blue-200`;
+  if (status === "Rejected")
+    return `${base} bg-red-50 text-red-700 border-red-200`;
   return `${base} bg-gray-50 text-gray-700 border-gray-200`;
 }
 
-/** Mock data (replace with API data) */
+/** Mock data */
 const MOCK_REPORTS = [
-  { id: 201, name: "Blood_Test_Results_Jan2025.csv", uploadedAt: "2025-08-12T10:00:00Z", status: "Approved", clinic: "Clinic A", recordCount: 150, s3Key: "org/clinic-a/201.csv" },
-  { id: 202, name: "Radiology_Reports_Q1.xlsx",       uploadedAt: "2025-08-13T08:55:00Z", status: "In Review", clinic: "Clinic B", recordCount: 75,  s3Key: "org/clinic-b/202.xlsx" },
-  { id: 203, name: "Lab_Results_Feb2025.csv",          uploadedAt: "2025-08-14T13:15:00Z", status: "Rejected", clinic: "Clinic A", recordCount: 0,   s3Key: "org/clinic-a/203.csv" },
-  { id: 204, name: "Chemistry_Panel_Mar2025.csv",      uploadedAt: "2025-08-14T17:40:00Z", status: "Approved", clinic: "Clinic C", recordCount: 212, s3Key: "org/clinic-c/204.csv" },
-  { id: 205, name: "Hematology_Apr2025.csv",           uploadedAt: "2025-08-15T09:20:00Z", status: "Approved", clinic: "Clinic A", recordCount: 98,  s3Key: "org/clinic-a/205.csv" },
-  { id: 206, name: "Radiology_Reports_Q2.xlsx",        uploadedAt: "2025-08-15T12:00:00Z", status: "Approved", clinic: "Clinic B", recordCount: 61,  s3Key: "org/clinic-b/206.xlsx" },
-  { id: 207, name: "Microbiology_May2025.csv",         uploadedAt: "2025-08-15T15:10:00Z", status: "In Review", clinic: "Clinic D", recordCount: 0,   s3Key: "org/clinic-d/207.csv" },
-  { id: 208, name: "Virology_Jun2025.csv",             uploadedAt: "2025-08-15T16:35:00Z", status: "Approved", clinic: "Clinic E", recordCount: 134, s3Key: "org/clinic-e/208.csv" },
-  { id: 209, name: "Urinalysis_Jul2025.csv",           uploadedAt: "2025-08-15T19:05:00Z", status: "Approved", clinic: "Clinic F", recordCount: 87,  s3Key: "org/clinic-f/209.csv" },
-  { id: 210, name: "Pathology_Special_Aug2025.xlsx",   uploadedAt: "2025-08-16T06:20:00Z", status: "Rejected", clinic: "Clinic B", recordCount: 0,   s3Key: "org/clinic-b/210.xlsx" },
-  { id: 211, name: "Coagulation_Aug2025.csv",          uploadedAt: "2025-08-16T08:00:00Z", status: "Approved", clinic: "Clinic G", recordCount: 53,  s3Key: "org/clinic-g/211.csv" },
-  { id: 212, name: "Endocrinology_Aug2025.csv",        uploadedAt: "2025-08-16T09:10:00Z", status: "In Review", clinic: "Clinic H", recordCount: 0,   s3Key: "org/clinic-h/212.csv" },
+  {
+    id: 201,
+    name: "Blood_Test_Results_Jan2025.csv",
+    uploadedAt: "2025-08-12T10:00:00Z",
+    status: "Approved",
+    clinic: "Clinic A",
+    recordCount: 150,
+    s3Key: "org/clinic-a/201.csv",
+  },
+  {
+    id: 202,
+    name: "Radiology_Reports_Q1.xlsx",
+    uploadedAt: "2025-08-13T08:55:00Z",
+    status: "In Review",
+    clinic: "Clinic B",
+    recordCount: 75,
+    s3Key: "org/clinic-b/202.xlsx",
+  },
+  {
+    id: 203,
+    name: "Lab_Results_Feb2025.csv",
+    uploadedAt: "2025-08-14T13:15:00Z",
+    status: "Rejected",
+    clinic: "Clinic A",
+    recordCount: 0,
+    s3Key: "org/clinic-a/203.csv",
+  },
 ];
 
 export default function AllClinicSubmissions() {
-  const [reports, setReports] = useState(MOCK_REPORTS);
+  const [reports, setReports] = useState([]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [page, setPage] = useState(1);
@@ -54,6 +111,21 @@ export default function AllClinicSubmissions() {
   const [sortDir, setSortDir] = useState("desc"); // asc | desc
   const [toast, setToast] = useState(null);
   const navigate = useNavigate();
+
+  // fetch reports
+  useEffect(() => {
+    if (USE_DUMMY_DATA) {
+      setReports(MOCK_REPORTS);
+    } else {
+      fetch(`${API_BASE}/reports`)
+        .then((res) => res.json())
+        .then((data) => setReports(data))
+        .catch((err) => {
+          console.error("❌ Failed to fetch reports:", err);
+          setReports([]);
+        });
+    }
+  }, []);
 
   useEffect(() => {
     if (!toast) return;
@@ -63,7 +135,7 @@ export default function AllClinicSubmissions() {
 
   const onDownload = (id) => {
     const r = reports.find((x) => x.id === id);
-    console.log("Download requested for:", r?.s3Key); // swap for S3 signed URL
+    console.log("Download requested for:", r?.s3Key);
     setToast({ type: "info", text: `Downloading ${r?.name}...` });
   };
 
@@ -71,8 +143,12 @@ export default function AllClinicSubmissions() {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return reports.filter((r) => {
-      const matchesText = !q || r.name.toLowerCase().includes(q) || r.clinic.toLowerCase().includes(q);
-      const matchesStatus = statusFilter === "All" ? true : r.status === statusFilter;
+      const matchesText =
+        !q ||
+        r.name.toLowerCase().includes(q) ||
+        r.clinic.toLowerCase().includes(q);
+      const matchesStatus =
+        statusFilter === "All" ? true : r.status === statusFilter;
       return matchesText && matchesStatus;
     });
   }, [reports, search, statusFilter]);
@@ -122,13 +198,17 @@ export default function AllClinicSubmissions() {
     >
       <span className="inline-flex items-center gap-1">
         {label}
-        {sortKey === keyName && <span className="text-xs text-gray-500">{sortDir === "asc" ? "▲" : "▼"}</span>}
+        {sortKey === keyName && (
+          <span className="text-xs text-gray-500">
+            {sortDir === "asc" ? "▲" : "▼"}
+          </span>
+        )}
       </span>
     </th>
   );
 
   const goToDetails = (id) => navigate(`/dashboard/reports/${id}`);
-  
+
   return (
     <div className="max-w-7xl mx-auto">
       <h2 className="text-2xl font-bold mb-4">All Clinic Submissions</h2>
@@ -185,25 +265,37 @@ export default function AllClinicSubmissions() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-200 bg-gray-50">
-                <SortHeader label="File Details" keyName="name" widthClass="w-2/5" />
+                <SortHeader
+                  label="File Details"
+                  keyName="name"
+                  widthClass="w-2/5"
+                />
                 <SortHeader label="Clinic" keyName="clinic" />
                 <SortHeader label="Upload Date" keyName="uploadedAt" />
                 <SortHeader label="Records" keyName="recordCount" />
                 <SortHeader label="Status" keyName="status" />
-                <th className="text-left px-6 py-3 font-semibold text-gray-700">Actions</th>
+                <th className="text-left px-6 py-3 font-semibold text-gray-700">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody>
               {pageData.length === 0 && (
                 <tr>
-                  <td className="px-6 py-8 text-center text-gray-500" colSpan={6}>
+                  <td
+                    className="px-6 py-8 text-center text-gray-500"
+                    colSpan={6}
+                  >
                     No reports found. Try clearing filters.
                   </td>
                 </tr>
               )}
 
               {pageData.map((r) => (
-                <tr key={r.id} className="border-b border-gray-100 hover:bg-gray-50">
+                <tr
+                  key={r.id}
+                  className="border-b border-gray-100 hover:bg-gray-50"
+                >
                   {/* CLICKABLE column -> go to details page */}
                   <td className="px-6 py-4">
                     <button
@@ -213,8 +305,12 @@ export default function AllClinicSubmissions() {
                     >
                       <FileText className="h-4 w-4 text-gray-500" />
                       <div className="text-left">
-                        <div className="font-medium text-gray-900 group-hover:underline">{r.name}</div>
-                        <div className="text-xs text-gray-500">{r.recordCount} records</div>
+                        <div className="font-medium text-gray-900 group-hover:underline">
+                          {r.name}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          {r.recordCount} records
+                        </div>
                       </div>
                     </button>
                   </td>
@@ -224,7 +320,9 @@ export default function AllClinicSubmissions() {
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
                       {getStatusIcon(r.status)}
-                      <span className={getStatusPill(r.status)}>{r.status}</span>
+                      <span className={getStatusPill(r.status)}>
+                        {r.status}
+                      </span>
                     </div>
                   </td>
                   <td className="px-6 py-4">
@@ -254,14 +352,17 @@ export default function AllClinicSubmissions() {
         {/* Pagination */}
         <div className="mt-4 flex items-center justify-between">
           <div className="text-xs text-gray-500">
-            Page {page} of {totalPages} · {filtered.length} result{filtered.length !== 1 ? "s" : ""}
+            Page {page} of {totalPages} · {filtered.length} result
+            {filtered.length !== 1 ? "s" : ""}
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page === 1}
               className={`px-3 py-1 rounded border ${
-                page === 1 ? "text-gray-300 border-gray-200" : "text-gray-700 border-gray-300 hover:bg-gray-50"
+                page === 1
+                  ? "text-gray-300 border-gray-200"
+                  : "text-gray-700 border-gray-300 hover:bg-gray-50"
               }`}
             >
               Prev
@@ -270,7 +371,9 @@ export default function AllClinicSubmissions() {
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}
               className={`px-3 py-1 rounded border ${
-                page === totalPages ? "text-gray-300 border-gray-200" : "text-gray-700 border-gray-300 hover:bg-gray-50"
+                page === totalPages
+                  ? "text-gray-300 border-gray-200"
+                  : "text-gray-700 border-gray-300 hover:bg-gray-50"
               }`}
             >
               Next
