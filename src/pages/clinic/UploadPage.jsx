@@ -1,17 +1,17 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { Upload as UploadIcon, FileText } from 'lucide-react';
 
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
+
 export default function UploadPage() {
   const [selectedFiles, setSelectedFiles] = useState([]);   // File[]
   const [progress, setProgress] = useState({});             // { [fileName]: 0..100 }
   const [status, setStatus]   = useState({});               // { [fileName]: 'idle'|'uploading'|'done'|'error' }
+  const [messages, setMessages] = useState({});             // { [fileName]: 'ok' | 'error text' }
 
-  // ---- Drag & Drop handlers ----
   const handleFileSelect = useCallback((e) => {
     const files = Array.from(e.target.files || []);
-    if (files.length) {
-      setSelectedFiles((prev) => [...prev, ...files]);
-    }
+    if (files.length) setSelectedFiles((prev) => [...prev, ...files]);
   }, []);
 
   const handleFileDrop = useCallback((e) => {
@@ -20,21 +20,12 @@ export default function UploadPage() {
     if (files.length) setSelectedFiles((prev) => [...prev, ...files]);
   }, []);
 
-  const handleDragOver = useCallback((e) => {
-    e.preventDefault();
-  }, []);
+  const handleDragOver = useCallback((e) => e.preventDefault(), []);
 
   const resetFile = (name) => {
-    setProgress((p) => {
-      const copy = { ...p };
-      delete copy[name];
-      return copy;
-    });
-    setStatus((s) => {
-      const copy = { ...s };
-      delete copy[name];
-      return copy;
-    });
+    setProgress((p) => { const c = {...p}; delete c[name]; return c; });
+    setStatus((s) => { const c = {...s}; delete c[name]; return c; });
+    setMessages((m) => { const c = {...m}; delete c[name]; return c; });
     setSelectedFiles((arr) => arr.filter((f) => f.name !== name));
   };
 
@@ -42,12 +33,16 @@ export default function UploadPage() {
   const uploadFile = useCallback((file) => {
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
-      const url = 'http://localhost:5000/upload';
+      const url = `${API_BASE}/upload`;
 
       setStatus((s) => ({ ...s, [file.name]: 'uploading' }));
       setProgress((p) => ({ ...p, [file.name]: 0 }));
+      setMessages((m) => ({ ...m, [file.name]: '' }));
 
       xhr.open('POST', url);
+
+      // if your server requires any custom headers, set them here:
+      // xhr.setRequestHeader('Authorization', `Bearer ${token}`);
 
       xhr.upload.onprogress = (e) => {
         if (e.lengthComputable) {
@@ -57,18 +52,26 @@ export default function UploadPage() {
       };
 
       xhr.onload = () => {
+        // try to parse server JSON for a nicer message
+        let payload = {};
+        try { payload = JSON.parse(xhr.responseText || '{}'); } catch {}
+
         if (xhr.status >= 200 && xhr.status < 300) {
           setStatus((s) => ({ ...s, [file.name]: 'done' }));
           setProgress((p) => ({ ...p, [file.name]: 100 }));
-          resolve();
+          setMessages((m) => ({ ...m, [file.name]: payload.key ? `Uploaded → ${payload.key}` : 'Uploaded' }));
+          resolve(payload);
         } else {
+          const errText = payload?.error || `Upload failed (${xhr.status})`;
           setStatus((s) => ({ ...s, [file.name]: 'error' }));
-          reject(new Error(`Upload failed (${xhr.status})`));
+          setMessages((m) => ({ ...m, [file.name]: errText }));
+          reject(new Error(errText));
         }
       };
 
       xhr.onerror = () => {
         setStatus((s) => ({ ...s, [file.name]: 'error' }));
+        setMessages((m) => ({ ...m, [file.name]: 'Network error' }));
         reject(new Error('Network error'));
       };
 
@@ -83,18 +86,17 @@ export default function UploadPage() {
       alert('Pick at least one .csv/.xlsx file first.');
       return;
     }
-    // Sequential uploads to keep backend simple in dev; switch to Promise.all for parallel later.
     for (const file of selectedFiles) {
       try {
-        // basic extension guard (client-side only)
         const okExt = /\.(csv|xlsx|xls)$/i.test(file.name);
         if (!okExt) {
           setStatus((s) => ({ ...s, [file.name]: 'error' }));
+          setMessages((m) => ({ ...m, [file.name]: 'Only CSV/XLS/XLSX allowed' }));
           continue;
         }
         await uploadFile(file);
-      } catch (e) {
-        // status already set to error inside uploadFile
+      } catch {
+        // error state already set
       }
     }
   };
@@ -141,49 +143,34 @@ export default function UploadPage() {
             </p>
           </div>
 
-          {/* Selected Files */}
           {selectedFiles.length > 0 && (
             <div className="mt-4 space-y-2">
               {selectedFiles.map((file) => {
                 const pct = progress[file.name] ?? 0;
                 const st = status[file.name] ?? 'idle';
+                const msg = messages[file.name] || '';
                 const isError = st === 'error';
                 const isDone = st === 'done';
                 const isUploading = st === 'uploading';
 
                 return (
-                  <div
-                    key={file.name + file.lastModified}
-                    className="bg-gray-50 p-3 rounded-lg border border-gray-200"
-                  >
+                  <div key={file.name + file.lastModified} className="bg-gray-50 p-3 rounded-lg border border-gray-200">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <FileText className="h-4 w-4 text-gray-500" />
                         <span className="text-sm font-medium">{file.name}</span>
-                        <span className="text-xs text-gray-500">
-                          {(file.size / 1024).toFixed(1)} KB
-                        </span>
+                        <span className="text-xs text-gray-500">{(file.size / 1024).toFixed(1)} KB</span>
                       </div>
 
                       <div className="flex items-center gap-2">
-                        {isDone && (
-                          <span className="text-xs px-2 py-1 rounded bg-green-100 text-green-700">
-                            Uploaded
-                          </span>
-                        )}
-                        {isError && (
-                          <span className="text-xs px-2 py-1 rounded bg-red-100 text-red-700">
-                            Error
-                          </span>
-                        )}
+                        {isDone && <span className="text-xs px-2 py-1 rounded bg-green-100 text-green-700">Uploaded</span>}
+                        {isError && <span className="text-xs px-2 py-1 rounded bg-red-100 text-red-700">Error</span>}
                         <button
                           type="button"
                           onClick={() => resetFile(file.name)}
                           disabled={isUploading}
                           className={`px-2 py-1 text-xs rounded ${
-                            isUploading
-                              ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                              : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                            isUploading ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
                           }`}
                         >
                           Remove
@@ -191,21 +178,16 @@ export default function UploadPage() {
                       </div>
                     </div>
 
-                    {/* Progress bar (only show while uploading or if we have a % > 0) */}
-                    {(isUploading || pct > 0) && (
+                    {(isUploading || pct > 0 || msg) && (
                       <div className="mt-2">
                         <div className="flex justify-between text-xs mb-1">
                           <span>{isUploading ? 'Uploading…' : isDone ? 'Complete' : isError ? 'Failed' : 'Queued'}</span>
                           <span>{pct}%</span>
                         </div>
                         <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div
-                            className={`h-2 rounded-full transition-all duration-200 ${
-                              isError ? 'bg-red-500' : 'bg-blue-600'
-                            }`}
-                            style={{ width: `${pct}%` }}
-                          />
+                          <div className={`h-2 rounded-full transition-all duration-200 ${isError ? 'bg-red-500' : 'bg-blue-600'}`} style={{ width: `${pct}%` }} />
                         </div>
+                        {msg && <div className={`text-xs mt-2 ${isError ? 'text-red-600' : 'text-gray-600'}`}>{msg}</div>}
                       </div>
                     )}
                   </div>
@@ -220,9 +202,7 @@ export default function UploadPage() {
               onClick={handleUploadAll}
               disabled={!selectedFiles.length || hasUploading}
               className={`px-4 py-2 rounded text-white ${
-                !selectedFiles.length || hasUploading
-                  ? 'bg-blue-300 cursor-not-allowed'
-                  : 'bg-blue-600 hover:bg-blue-700'
+                !selectedFiles.length || hasUploading ? 'bg-blue-300 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
               }`}
             >
               {hasUploading ? 'Uploading…' : 'Upload Selected'}

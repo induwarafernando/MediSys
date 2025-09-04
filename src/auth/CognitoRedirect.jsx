@@ -3,12 +3,19 @@ import { useEffect } from "react";
 
 export default function CognitoRedirect() {
   useEffect(() => {
-    window.location.href =
-      "https://us-east-1pcvcgdetm.auth.us-east-1.amazoncognito.com/login?client_id=5ve8nr867esvsm2eajeplflb2e&response_type=code&scope=email+openid+phone&redirect_uri=http%3A%2F%2Flocalhost%3A5173%2Fdashboard";
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("code");
+
+    if (code) {
+      // Fake login success for demo
+      localStorage.setItem("idToken", code); // just store the code
+      window.location.href = "/dashboard";  // go straight to dashboard
+    } else {
+      // No code yet → send user to Cognito hosted login
+      window.location.href =
+        "https://eu-north-1maorcr1qy.auth.eu-north-1.amazoncognito.com/login?client_id=51oenn82n2rduqhdo7aadibsgt&redirect_uri=http://localhost:5173/dashboard&response_type=code&scope=email+openid+phone";
+    }
   }, []);
 
-  return <>
-  <h1>Redirecting...</h1>
-  <p>If you are not redirected automatically, follow <a href="https://us-east-1pcvcgdetm.auth.us-east-1.amazoncognito.com/login?client_id=5ve8nr867esvsm2eajeplflb2e&redirect_uri=http://localhost:5173/dashboard&response_type=code&scope=email+openid+phone">this link</a>.</p>
-  </>; // or a spinner if you like
+  return <h1>Redirecting...</h1>;
 }
