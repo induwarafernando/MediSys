@@ -1,3 +1,4 @@
+// src/App.js
 import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import CognitoRedirect from "./auth/CognitoRedirect";
@@ -10,6 +11,8 @@ import AllClinicSubmissions from "./pages/internal/AllClinicSubmissions";
 import ReportDetails from "./pages/internal/ReportDetails";
 import InternalDashboard from "./pages/dashboard/InternalDashboard";
 import CompliancePage from "./pages/internal/CompliancePage";
+// Import the new internal dashboard home
+import InternalDashboardHome from "./pages/dashboard/InternalDashboardHome";
 
 function ProtectedRoute({ children }) {
   const token = localStorage.getItem("idToken");
@@ -24,12 +27,13 @@ export default function App() {
         <Route path="/login" element={<CognitoRedirect />} />
 
 
-<Route path="/internal" element={<InternalDashboard />}>
-  <Route index element={<DashboardHome />} />
-  <Route path="reports" element={<AllClinicSubmissions />} />
-  <Route path="compliance" element={<CompliancePage />} />
-  <Route path="notifications" element={<NotificationsPage />} />
-</Route>
+        <Route path="/internal" element={<InternalDashboard />}>
+          {/* Use the new InternalDashboardHome component here */}
+          <Route index element={<InternalDashboardHome />} />
+          <Route path="reports" element={<AllClinicSubmissions />} />
+          <Route path="compliance" element={<CompliancePage />} />
+          <Route path="notifications" element={<NotificationsPage />} />
+        </Route>
 
 
         <Route
